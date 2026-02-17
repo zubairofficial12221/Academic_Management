@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Management System</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="student-management-system.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-bg" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <i class="fas fa-graduation-cap"></i>
+      <h2>EduManage Pro</h2>
+      <p>All-in-One Student Attendance &amp; Academic System</p>
+    </div>
+    <button class="role-btn" onclick="login('Admin')"><i class="fas fa-user-shield"></i>&nbsp; Login as Admin</button>
+    <button class="role-btn" onclick="login('Mentor')"><i class="fas fa-chalkboard-teacher"></i>&nbsp; Login as Mentor</button>
+    <button class="role-btn" onclick="login('Student')"><i class="fas fa-user-graduate"></i>&nbsp; Login as Student</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><i class="fas fa-graduation-cap"></i> EduManage</div>
+    <button class="nav-link active" onclick="showSection('dashboard',this)"><i class="fas fa-home"></i> Dashboard</button>
+    <button class="nav-link" onclick="showSection('attendance',this)"><i class="fas fa-check-square"></i> Attendance</button>
+    <button class="nav-link" onclick="showSection('students',this)"><i class="fas fa-users"></i> Students</button>
+    <button class="nav-link" onclick="showSection('examSeats',this)"><i class="fas fa-th"></i> Exam Seats</button>
+    <button class="nav-link" onclick="showSection('results',this)"><i class="fas fa-award"></i> Results</button>
+    <button class="nav-link" onclick="showSection('weather',this)"><i class="fas fa-cloud-sun"></i> Weather</button>
+    <button class="nav-link" onclick="showSection('notifications',this)"><i class="fas fa-bell"></i> Notifications</button>
+    <button class="nav-link" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+
+  <!-- Main -->
+  <div class="main" id="main">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:14px">
+        <button class="toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <h5 id="pageTitle">Dashboard</h5>
+      </div>
+      <div style="display:flex;align-items:center;gap:20px;position:relative">
+        <button class="btn-grad" style="padding:8px 14px;font-size:13px" onclick="refreshFromSupabase()" title="Reload data from database"><i class="fas fa-sync-alt"></i> Refresh</button>
+        <span id="dataLoadingIndicator" style="display:none;font-size:13px;color:#888"><i class="fas fa-spinner fa-spin"></i> Loading...</span>
+        <div class="notif-bell" onclick="toggleNotifDropdown()">
+          <i class="fas fa-bell" style="font-size:20px;color:#667eea"></i>
+          <div class="notif-count" id="notifCount">0</div>
+        </div>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-head"><i class="fas fa-bell"></i> Notifications</div>
+          <div id="notifList"><div class="notif-item" style="color:#888;text-align:center">No notifications yet</div></div>
+        </div>
+        <span style="font-weight:700;color:#667eea" id="userLabel">Admin</span>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="sec-dashboard">
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#dbeafe;color:#3b82f6"><i class="fas fa-users"></i></div>
+          <h3 id="stTotal">6</h3><p>Total Students</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#d1fae5;color:#10b981"><i class="fas fa-check-circle"></i></div>
+          <h3 id="stAvg">88%</h3><p>Avg Attendance</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fee2e2;color:#ef4444"><i class="fas fa-user-times"></i></div>
+          <h3 id="stAbsent">0</h3><p>Absent Today</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef3c7;color:#f59e0b"><i class="fas fa-bell"></i></div>
+          <h3 id="stNotif">0</h3><p>Alerts Sent</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header-row"><h5><i class="fas fa-list-alt"></i> Recent Notifications</h5></div>
+        <div id="dashNotifList"><p style="color:#888">No recent activity.</p></div>
+      </div>
+      <div class="card">
+        <div class="card-header-row"><h5><i class="fas fa-info-circle"></i> System Overview</h5></div>
+        <p style="color:#555;font-size:14px;line-height:1.8">
+          Welcome to <strong>EduManage Pro</strong> — a centralized platform for managing student attendance, exam seating, results, and weather-based holiday recommendations. Use the sidebar to navigate between modules.
+        </p>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="section" id="sec-attendance">
+      <div class="card">
+        <div class="card-header-row">
+          <h5><i class="fas fa-check-square"></i> Hour-wise Attendance</h5>
+          <button class="btn-grad" onclick="saveAttendance()"><i class="fas fa-save"></i> Save &amp; Notify</button>
+        </div>
+        <div class="filter-row">
+          <input type="text" placeholder="Search student..." id="attSearch" oninput="renderAttendance()">
+          <select id="attDept" onchange="renderAttendance()">
+            <option value="all">All Departments</option>
+            <option value="Computer Science">Computer Science</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Mechanical">Mechanical</option>
+          </select>
+          <select id="attDate">
+            <option id="todayOption"></option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Roll No</th><th>Name</th><th>Dept</th>
+                <th>Hr 1</th><th>Hr 2</th><th>Hr 3</th><th>Hr 4</th><th>Hr 5</th><th>Hr 6</th>
+                <th>%</th>
+              </tr>
+            </thead>
+            <tbody id="attBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="section" id="sec-students">
+      <div class="card">
+        <div class="card-header-row">
+          <h5><i class="fas fa-users"></i> Student Directory</h5>
+          <button class="btn-grad" onclick="openAddStudent()"><i class="fas fa-plus"></i> Add Student</button>
+        </div>
+        <div class="filter-row">
+          <input type="text" placeholder="Search name or roll no..." id="stuSearch" oninput="renderStudents()">
+          <select id="stuDept" onchange="renderStudents()">
+            <option value="all">All Departments</option>
+            <option value="Computer Science">Computer Science</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Mechanical">Mechanical</option>
+          </select>
+          <select id="stuAttFilter" onchange="renderStudents()">
+            <option value="all">All Attendance</option>
+            <option value="low">Below 75%</option>
+            <option value="ok">75% - 90%</option>
+            <option value="good">Above 90%</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Roll No</th><th>Name</th><th>Dept</th><th>Mentor</th><th>Attendance</th><th>Status</th></tr>
+            </thead>
+            <tbody id="stuBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXAM SEATS -->
+    <div class="section" id="sec-examSeats">
+      <div class="card">
+        <div class="card-header-row">
+          <h5><i class="fas fa-th"></i> Exam Seat Arrangement</h5>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <select id="examName" style="padding:8px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px">
+              <option>Mid Semester Exam</option>
+              <option>End Semester Exam</option>
+              <option>Practical Exam</option>
+            </select>
+            <button class="btn-grad" onclick="generateSeats()"><i class="fas fa-random"></i> Generate Seats</button>
+          </div>
+        </div>
+        <div id="seatsContainer"><p style="color:#888;text-align:center;padding:30px">Click "Generate Seats" to auto-assign exam rooms and seat numbers.</p></div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="section" id="sec-results">
+      <div class="card">
+        <div class="card-header-row"><h5><i class="fas fa-award"></i> Student Results Portal</h5></div>
+        <div class="filter-row">
+          <input type="text" placeholder="Enter Roll Number (e.g. CS001)" id="rollInput">
+          <select id="semSelect">
+            <option value="1">Semester 1</option>
+            <option value="2">Semester 2</option>
+            <option value="3">Semester 3</option>
+          </select>
+          <button class="btn-grad" onclick="searchResult()"><i class="fas fa-search"></i> View Result</button>
+        </div>
+        <div id="resultOut"></div>
+      </div>
+    </div>
+
+    <!-- WEATHER -->
+    <div class="section" id="sec-weather">
+      <div class="weather-hero" id="weatherHero">
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div>
+            <p style="opacity:.8;margin-bottom:4px" id="wLocation">Chennai, Tamil Nadu</p>
+            <div class="temp" id="wTemp">--°C</div>
+            <p style="font-size:18px" id="wDesc">Fetching weather...</p>
+          </div>
+          <div style="font-size:70px" id="wIcon">🌤️</div>
+        </div>
+        <div class="weather-meta">
+          <div><p style="opacity:.8;font-size:13px">Humidity</p><p style="font-size:22px;font-weight:700" id="wHumidity">--%</p></div>
+          <div><p style="opacity:.8;font-size:13px">Wind</p><p style="font-size:22px;font-weight:700" id="wWind">-- km/h</p></div>
+          <div><p style="opacity:.8;font-size:13px">Feels Like</p><p style="font-size:22px;font-weight:700" id="wFeels">--°C</p></div>
+        </div>
+      </div>
+      <div class="alert-card" id="weatherAlert" style="display:none">
+        <h5 style="color:#dc2626"><i class="fas fa-exclamation-triangle"></i> Severe Weather Alert!</h5>
+        <p id="alertMsg" style="margin:8px 0 14px;color:#555"></p>
+        <button class="btn-grad" style="background:#ef4444" onclick="declareHoliday()"><i class="fas fa-calendar-times"></i> Declare Holiday</button>
+      </div>
+      <div class="card">
+        <div class="card-header-row"><h5><i class="fas fa-history"></i> Weather Log</h5></div>
+        <div id="weatherLog"><p style="color:#888">Waiting for weather data...</p></div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="section" id="sec-notifications">
+      <div class="card">
+        <div class="card-header-row">
+          <h5><i class="fas fa-bell"></i> All Notifications</h5>
+          <button class="btn-grad" onclick="clearNotifications()"><i class="fas fa-trash"></i> Clear All</button>
+        </div>
+        <div id="allNotifList"><p style="color:#888;text-align:center;padding:20px">No notifications yet.</p></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-config.js"></script>
+<script src="student-management-system.js"></script>
+</body>
+</html>
